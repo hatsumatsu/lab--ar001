@@ -11,6 +11,7 @@ let trackedMatrix = new Ola( [
     0,0,0,0
 ], frameLength );
 
+
 let markers = {
     'pinball': {
         width: 1637,
@@ -19,6 +20,10 @@ let markers = {
         url: 'https://s3-us-west-2.amazonaws.com/s.cdpn.io/181962/pinball',
     },
 };
+
+let model;
+const clock = new THREE.Clock();
+let mixers = [];
 
 var setMatrix = function( matrix, value ) {
     let array = [];
@@ -64,6 +69,13 @@ function start( container, marker, video, input_width, input_height, canvas_draw
  */
     let scene = new THREE.Scene();
 
+
+/**
+ * LIGHTS
+ */
+    const light = new THREE.AmbientLight( 0xffffff );
+    scene.add( light);
+    
     
 /**
  * CAMERA
@@ -73,32 +85,39 @@ function start( container, marker, video, input_width, input_height, canvas_draw
     scene.add( camera );
 
     
-    
-/**
- * OBJECT
- */    
-    let sphere = new THREE.Mesh(
-        new THREE.SphereGeometry( 0.5, 8, 8 ),
-        new THREE.MeshNormalMaterial()
-    );
-
-    sphere.material.shading = THREE.FlatShading;
-
-    sphere.position.z = 0;
-    sphere.position.x = 100;
-    sphere.position.y = 100;
-    sphere.scale.set( 200, 200, 200 );
-
-    
 /**
  * ROOT
  */    
     let root = new THREE.Object3D();
     root.matrixAutoUpdate = false;
-
-    root.add( sphere );
     
     scene.add( root );    
+
+
+/**
+ * OBJECT
+ */    
+    let loader = new THREE.GLTFLoader();
+
+    loader.load(
+        // resource URL
+        'model/Flamingo.glb',
+        function ( gltf ) {
+            model = gltf.scene.children[ 0 ];
+            model.position.z = 0;
+            model.position.x = 100;
+            model.position.y = 100;
+
+            const animation = gltf.animations[ 0 ];
+            const mixer = new THREE.AnimationMixer( model );
+            mixers.push( mixer );
+            const action = mixer.clipAction( animation );
+            action.play();
+
+            root.matrixAutoUpdate = false;
+            root.add( model );
+        }
+    );    
     
 
     let load = () => {
@@ -211,7 +230,7 @@ function start( container, marker, video, input_width, input_height, canvas_draw
             lasttime = now;                    
     
             if( !lastmsg ) {
-                sphere.visible = false;
+                model.visible = false;
             } else {
                 // let proj = JSON.parse( lastmsg.proj );
                 let world = JSON.parse( lastmsg.matrixGL_RH );
@@ -242,12 +261,18 @@ function start( container, marker, video, input_width, input_height, canvas_draw
                 let w = width / dpi * 2.54 * 10;
                 let h = height / dpi * 2.54 * 10;
 
-                sphere.visible = true;
+                model.visible = true;
             }
         }
 
         // set matrix of 'root' by detected 'world' matrix
         setMatrix( root.matrix, trackedMatrix );
+
+        if ( mixers.length > 0 ) {
+            for ( var i = 0; i < mixers.length; i ++ ) {
+                mixers[ i ].update( clock.getDelta() );
+            }
+        }        
         
         renderer.render( scene, camera );
     };
