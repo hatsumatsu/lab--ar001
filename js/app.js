@@ -3,13 +3,23 @@ function isMobile() {
 }
 
 const frameLength = 200; // in ms
+const interpolationFactor = 24;
 
-let trackedMatrix = new Ola( [
-    0,0,0,0,
-    0,0,0,0,
-    0,0,0,0,
-    0,0,0,0
-], frameLength );
+let trackedMatrix = {
+    // for interpolation
+    delta: [
+        0,0,0,0,
+        0,0,0,0,
+        0,0,0,0,
+        0,0,0,0
+    ],
+    interpolated: [
+        0,0,0,0,
+        0,0,0,0,
+        0,0,0,0,
+        0,0,0,0        
+    ]
+}
 
 
 let markers = {
@@ -33,7 +43,7 @@ var setMatrix = function( matrix, value ) {
     }
     
     if( typeof matrix.elements.set === 'function' ) {
-        matrix.elements.set(array);
+        matrix.elements.set( array );
     } else {
         matrix.elements = [].slice.call( array );
     }
@@ -75,7 +85,7 @@ function start( container, marker, video, input_width, input_height, canvas_draw
  */
     const light = new THREE.AmbientLight( 0xffffff );
     scene.add( light);
-    
+
     
 /**
  * CAMERA
@@ -124,32 +134,34 @@ function start( container, marker, video, input_width, input_height, canvas_draw
         vw = input_width;
         vh = input_height;
 
-        pscale = 320 / Math.max(vw, vh / 3 * 4);
+        pscale = 320 / Math.max( vw, vh / 3 * 4 );
         sscale = isMobile() ? window.outerWidth / input_width : 1;
 
         sw = vw * sscale;
         sh = vh * sscale;
-        video.style.width = sw + "px";
-        video.style.height = sh + "px";
-        container.style.width = sw + "px";
-        container.style.height = sh + "px";
-        canvas_draw.style.clientWidth = sw + "px";
-        canvas_draw.style.clientHeight = sh + "px";
+        video.style.width = sw + 'px';
+        video.style.height = sh + 'px';
+        container.style.width = sw + 'px';
+        container.style.height = sh + 'px';
+        canvas_draw.style.clientWidth = sw + 'px';
+        canvas_draw.style.clientHeight = sh + 'px';
         canvas_draw.width = sw;
         canvas_draw.height = sh;
         w = vw * pscale;
         h = vh * pscale;
-        pw = Math.max(w, h / 3 * 4);
-        ph = Math.max(h, w / 4 * 3);
-        ox = (pw - w) / 2;
-        oy = (ph - h) / 2;
-        canvas_process.style.clientWidth = pw + "px";
-        canvas_process.style.clientHeight = ph + "px";
+        pw = Math.max( w, h / 3 * 4 );
+        ph = Math.max( h, w / 4 * 3 );
+        ox = ( pw - w ) / 2;
+        oy = ( ph - h ) / 2;
+        canvas_process.style.clientWidth = pw + 'px';
+        canvas_process.style.clientHeight = ph + 'px';
         canvas_process.width = pw;
         canvas_process.height = ph;
 
         renderer.setSize( sw, sh );
 
+
+        // service worker
         worker = new Worker( 'js/worker.js' );
 
         worker.postMessage( { 
@@ -161,6 +173,7 @@ function start( container, marker, video, input_width, input_height, canvas_draw
 
         worker.onmessage = ( event ) => {
             let message = event.data; 
+
             switch( message.type ) {
                 case 'loaded': {                    
                     let proj = JSON.parse( message.proj );
@@ -183,12 +196,16 @@ function start( container, marker, video, input_width, input_height, canvas_draw
                     
                     break;
                 }
+
                 case 'found': {
                     found( message );
+                    
                     break;
                 }
+
                 case 'not found': {
                     found( null );
+                    
                     break;
                 }
             }
@@ -203,79 +220,74 @@ function start( container, marker, video, input_width, input_height, canvas_draw
     };
 
     
-    let lastmsg = null;
-    let found = ( message ) => {
-        lastmsg = message;
-    };
+    let world;
 
-    let lasttime = Date.now();
-    let time = 0;
+
+    let found = ( message ) => {
+        if( !message ) {
+            world = null;
+        } else {
+            world = JSON.parse( message.matrixGL_RH );
+        }
+    };
     
+
     
     /** 
      * Renders the THREE.js scene
      */
     let draw = () => {
+        if( !model ) {
+            return false;
+        }
+
+
         /**
          * Callback 
          */
         render_update();
         
-        let now = Date.now();
-        let dt = now - lasttime;
-        // time += dt;
-        
-        // limit rendering to 10 FPS;
-        if( dt > frameLength ) {
-            lasttime = now;                    
-    
-            if( !lastmsg ) {
-                model.visible = false;
-            } else {
-                // let proj = JSON.parse( lastmsg.proj );
-                let world = JSON.parse( lastmsg.matrixGL_RH );
-                trackedMatrix[0] = world[0];
-                trackedMatrix[1] = world[1];
-                trackedMatrix[2] = world[2];
-                trackedMatrix[3] = world[3];
-                trackedMatrix[4] = world[4];
-                trackedMatrix[5] = world[5];
-                trackedMatrix[6] = world[6];
-                trackedMatrix[7] = world[7];
-                trackedMatrix[8] = world[8];
-                trackedMatrix[9] = world[9];
-                trackedMatrix[10] = world[10];
-                trackedMatrix[11] = world[11];
-                trackedMatrix[12] = world[12];
-                trackedMatrix[13] = world[13];
-                trackedMatrix[14] = world[14];
-                trackedMatrix[15] = world[15];
 
+        // marker not found
+        if( !world ) {
+            model.visible = false;
 
-                // console.log( world );
+        // marker found            
+        } else {
+            model.visible = true;
 
-                let width = marker.width;
-                let height = marker.height;
-                let dpi = marker.dpi;
+            // interpolate matrix
+            for( let i = 0; i < 16; i++ ) { 
+                trackedMatrix.delta[i] = world[i] - trackedMatrix.interpolated[i];            
+                trackedMatrix.interpolated[i] = trackedMatrix.interpolated[i] + ( trackedMatrix.delta[i] / interpolationFactor );
+            }        
 
-                let w = width / dpi * 2.54 * 10;
-                let h = height / dpi * 2.54 * 10;
+            // set matrix of 'root' by detected 'world' matrix
+            setMatrix( root.matrix, trackedMatrix.interpolated );
 
-                model.visible = true;
-            }
+            // run three.js animation
+            if ( mixers.length > 0 ) {
+                for( var i = 0; i < mixers.length; i++ ) {
+                    mixers[i].update( clock.getDelta() );
+                }
+            }                  
+
+            // ANYONE KNOW WHAT THIS WAS FOR????
+            // 
+            // let width = marker.width;
+            // let height = marker.height;
+            // let dpi = marker.dpi;
+
+            // let w = width / dpi * 2.54 * 10;
+            // let h = height / dpi * 2.54 * 10;
+
         }
 
-        // set matrix of 'root' by detected 'world' matrix
-        setMatrix( root.matrix, trackedMatrix );
-
-        if ( mixers.length > 0 ) {
-            for ( var i = 0; i < mixers.length; i ++ ) {
-                mixers[ i ].update( clock.getDelta() );
-            }
-        }        
         
         renderer.render( scene, camera );
     };
+
+
 
     /**
      * This is called on every frame 
