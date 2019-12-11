@@ -131,20 +131,24 @@ function start( container, marker, video, input_width, input_height, canvas_draw
     
 
     let load = () => {
+        // 360 / 240
         vw = input_width;
         vh = input_height;
+
 
         pscale = 320 / Math.max( vw, vh / 3 * 4 );
         sscale = isMobile() ? window.outerWidth / input_width : 1;
 
         sw = vw * sscale;
         sh = vh * sscale;
-        video.style.width = sw + 'px';
-        video.style.height = sh + 'px';
-        container.style.width = sw + 'px';
-        container.style.height = sh + 'px';
-        canvas_draw.style.clientWidth = sw + 'px';
-        canvas_draw.style.clientHeight = sh + 'px';
+
+        // video.style.width = sw + 'px';
+        // video.style.height = sh + 'px';
+        // container.style.width = sw + 'px';
+        // container.style.height = sh + 'px';
+        // canvas_draw.style.clientWidth = sw + 'px';
+        // canvas_draw.style.clientHeight = sh + 'px';
+
         canvas_draw.width = sw;
         canvas_draw.height = sh;
         w = vw * pscale;
@@ -153,8 +157,8 @@ function start( container, marker, video, input_width, input_height, canvas_draw
         ph = Math.max( h, w / 4 * 3 );
         ox = ( pw - w ) / 2;
         oy = ( ph - h ) / 2;
-        canvas_process.style.clientWidth = pw + 'px';
-        canvas_process.style.clientHeight = ph + 'px';
+        // canvas_process.style.clientWidth = pw + 'px';
+        // canvas_process.style.clientHeight = ph + 'px';
         canvas_process.width = pw;
         canvas_process.height = ph;
 
