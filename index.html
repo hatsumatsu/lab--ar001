@@ -77,7 +77,10 @@ let canvas = document.getElementById( 'canvas' );
  * APP / VIDEO STREAM
  */               
 if( navigator.mediaDevices && navigator.mediaDevices.getUserMedia ) {
-    let hint = {};
+    let hint = {
+        audio: false,
+        video: true
+    };
 
     if( window.innerWidth < 800 ) {
         let width = ( window.innerWidth < window.innerHeight ) ? 240 : 360;
@@ -97,7 +100,7 @@ if( navigator.mediaDevices && navigator.mediaDevices.getUserMedia ) {
         };
     }
     
-    navigator.mediaDevices.getUserMedia( { video: hint } ).then( function( stream ) {
+    navigator.mediaDevices.getUserMedia( hint ).then( function( stream ) {
         video.srcObject = stream;
         video.addEventListener( 'loadedmetadata', () => {
             video.play();
