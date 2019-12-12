@@ -161,6 +161,20 @@ function start( container, marker, video, input_width, input_height, canvas_draw
 
         renderer.setSize( sw, sh );
 
+        console.table( [
+            ['vw', vw],
+            ['vh', vh],
+            ['pscale', pscale],
+            ['sscale', sscale],
+            ['sw', sw],
+            ['sh', sh],
+            ['w', w],
+            ['h', h],
+            ['pw', pw],
+            ['ph', ph],
+            ['ox', oy]
+        ] );
+
 
         // service worker
         worker = new Worker( 'js/worker.js' );
