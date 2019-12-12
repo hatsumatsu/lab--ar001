@@ -87,9 +87,9 @@ body.loading>* {
   left: 0;  
 
   display: block;
-  // width: 100% !important;
-  // height: 100% !important;
-  // object-fit: cover;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
 }
 
 #canvas {
@@ -99,7 +99,7 @@ body.loading>* {
   z-index: 100;
 
   display: block;
-  // width: 100% !important;
-  // height: 100% !important;  
-  // object-fit: cover;
+  width: 100% !important;
+  height: 100% !important;  
+  object-fit: cover;
 }
