@@ -93,11 +93,13 @@ if( navigator.mediaDevices && navigator.mediaDevices.getUserMedia ) {
         hint = {
             audio: false,
             video: {
-                facingMode: { 'ideal': 'environment' },                
+                facingMode: 'environment',                
                 width: { min: width, max: width },
                 height: { min: height, max: height },
             },
         };
+
+        console.log( hint );        
     }
     
     navigator.mediaDevices.getUserMedia( hint ).then( function( stream ) {
