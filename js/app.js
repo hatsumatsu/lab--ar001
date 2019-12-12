@@ -24,9 +24,6 @@ let trackedMatrix = {
 
 let markers = {
     'pinball': {
-        width: 1637,
-        height: 2048,
-        dpi: 215,
         url: 'https://s3-us-west-2.amazonaws.com/s.cdpn.io/181962/pinball',
     },
 };
